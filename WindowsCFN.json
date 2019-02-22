@@ -1,0 +1,169 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09T00:00:00.000Z",
+	"Description": "This template creates a single server installation of Microsoft Windows Server 2012r2 ready for Jenkins.",
+	"Parameters": {
+		"KeyName": {
+			"Description": "Name of an existing EC2 KeyPair",
+			"Type": "AWS::EC2::KeyPair::KeyName",
+			"ConstraintDescription": "must be the name of an existing EC2 KeyPair.",
+			"Default": "k1"
+		},
+		"InstanceType": {
+			"Description": "Amazon EC2 instance type",
+			"Type": "String",
+			"Default": "t2.micro",
+			"AllowedValues": [
+				"t1.micro",
+				"t2.micro",
+				"t2.small",
+				"t2.medium",
+				"m1.small",
+				"m1.medium",
+				"m1.large",
+				"m1.xlarge",
+				"m2.xlarge",
+				"m2.2xlarge",
+				"m2.4xlarge",
+				"m3.medium",
+				"m3.large",
+				"m3.xlarge",
+				"m3.2xlarge",
+				"m4.large",
+				"m4.xlarge",
+				"m4.2xlarge",
+				"m4.4xlarge",
+				"m4.10xlarge",
+				"c1.medium",
+				"c1.xlarge",
+				"c3.large",
+				"c3.xlarge",
+				"c3.2xlarge",
+				"c3.4xlarge",
+				"c3.8xlarge",
+				"c4.large",
+				"c4.xlarge",
+				"c4.2xlarge",
+				"c4.4xlarge",
+				"c4.8xlarge",
+				"g2.2xlarge",
+				"r3.large",
+				"r3.xlarge",
+				"r3.2xlarge",
+				"r3.4xlarge",
+				"r3.8xlarge",
+				"i2.xlarge",
+				"i2.2xlarge",
+				"i2.4xlarge",
+				"i2.8xlarge",
+				"d2.xlarge",
+				"d2.2xlarge",
+				"d2.4xlarge",
+				"d2.8xlarge",
+				"hi1.4xlarge",
+				"hs1.8xlarge",
+				"cr1.8xlarge",
+				"cc2.8xlarge",
+				"cg1.4xlarge"
+			],
+			"ConstraintDescription": "must be a valid EC2 instance type."
+		},
+		"SourceCidrForRDP": {
+			"Description": "IP Cidr from which you are likely to RDP into the instances. You can add rules later by modifying the created security groups e.g. 54.32.98.160/32",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"AllowedPattern": "^([0-9]+\\.){3}[0-9]+\\/[0-9]+$",
+			"Default": "0.0.0.0/0"
+		},
+		"SourceCidrForWinRM": {
+			"Description": "IP Cidr from which you are likely to RDP into the instances. You can add rules later by modifying the created security groups e.g. 54.32.98.160/32",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"AllowedPattern": "^([0-9]+\\.){3}[0-9]+\\/[0-9]+$",
+			"Default": "0.0.0.0/0"
+		}
+	},
+	"Mappings": {
+		"AWSRegion2AMI": {
+			"us-east-1": {
+				"Windows2012r2": "ami-066663db63b3aa675"
+			}
+		}
+	},
+	"Resources": {
+		"jenkinsSecurityGroup": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "Enable HTTP and RDP",
+				"SecurityGroupIngress": [
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "80",
+						"ToPort": "80",
+						"CidrIp": "0.0.0.0/0"
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "3389",
+						"ToPort": "3389",
+						"CidrIp": null
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "5986",
+						"ToPort": "5986",
+						"CidrIp": null
+					}
+				]
+			}
+		},
+        "JenkinsFoundation": {
+			"Type": "AWS::EC2::Instance",
+			"Metadata": {
+				"AWS::CloudFormation::Init": {
+					"config": {
+						"commands": {
+							"1-extract": {
+
+								"command": "powershell.exe -Command Set-ExecutionPolicy -Force remotesigned"
+							},
+							"2-prereq": {
+                                "command": "powershell.exe -Command Invoke-WebRequest https://raw.githubusercontent.com/tkrish/Jenkins-Server-On-Windows2012r2/master/JavaInstall.ps1 -OutFile JavaInstall.ps1"
+							},
+							"3-install": {
+								"command": "powershell.exe -File JavaInstall.ps1"
+							}
+						}
+					}
+				}
+			},
+			"Properties": {
+				"InstanceType": null,
+				"ImageId": null,
+				"SecurityGroups": [
+					null
+				],
+				"KeyName": null,
+				"Tags": [
+					{
+						"Key": "Name",
+						"Value": "WindowsJenkinsTest"
+					}
+				],
+				"UserData": null
+			}
+		},
+		"JenkinsFoundationWaitHandle": {
+			"Type": "AWS::CloudFormation::WaitConditionHandle"
+		},
+		"AnsibleFoundationWaitCondition": {
+			"Type": "AWS::CloudFormation::WaitCondition",
+			"DependsOn": "JenkinsFoundation",
+			"Properties": {
+				"Handle": null,
+				"Timeout": "3600"
+			}
+		}
+	}
+}
