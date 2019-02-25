@@ -1,0 +1,4 @@
+New-Item -ItemType Directory -Force -Path C:\temp
+cd C:\temp\
+powershell.exe -Command Invoke-WebRequest https://raw.githubusercontent.com/tkrish/Jenkins-Server-On-Windows2012r2/master/JavaInstall.ps1 -OutFile C:\temp\JavaInstall.ps1
+#powershell.exe -Command Invoke-WebRequest https://raw.githubusercontent.com/tkrish/Jenkins-Server-On-Windows2012r2/master/JavaInstall.ps1 -OutFile C:\temp\JavaInstall.ps1
